@@ -2,6 +2,7 @@
 
 ## Introduction
 In this repository, we create a Distributed scraper system to scrape product details in Tiki. 
+
 We apply Multiprocessing, Distributed system with Scrapy and Redis to optimize scraping time, CPU and memory usage.
 
 ## Workflow
