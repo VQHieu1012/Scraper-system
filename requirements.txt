@@ -6,3 +6,4 @@ scrapy >= 2.0
 multiprocessing
 playwright-stealth >= 1.0.5
 beautifulsoup4 >=4.12.2
+python-dotenv
