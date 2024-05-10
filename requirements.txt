@@ -1,4 +1,5 @@
 playwight
+Twisted <= 22.10.0
 scrapy-redis >= 0.6.8
 redis >= 5.0
 scrapy >= 2.0
