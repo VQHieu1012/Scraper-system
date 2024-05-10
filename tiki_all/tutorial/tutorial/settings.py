@@ -84,7 +84,7 @@ DEFAULT_REQUEST_HEADERS = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    "tutorial.pipelines.TutorialPipeline": 300,
-   #"scrapy_redis.pipelines.RedisPipeline":400
+   "scrapy_redis.pipelines.RedisPipeline":400
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -127,5 +127,8 @@ SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 SCHEDULER_PERSIST = True
 
 #LOG_LEVEL = 'DEBUG'
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-REDIS_URL = "redis://default:E0IcnG1fWAccXFAzIvY2jQQsSJMXqW7O@redis-19558.c265.us-east-1-2.ec2.cloud.redislabs.com:19558"
+REDIS_URL = os.getenv('redis_url_connection')

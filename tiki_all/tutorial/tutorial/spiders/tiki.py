@@ -6,7 +6,7 @@ import sys
 import os
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(r"D:\TIKI\tiki_all\tutorial\tutorial")
+sys.path.append(r"D:\Distributed-scraper\tiki_all\tutorial\tutorial\\")
 
 from pipelines import TutorialPipeline
 
@@ -33,7 +33,7 @@ class TikiSpider(RedisSpider):
 
     redis_key = 'tiki_queue:start_urls'
     redis_batch_size = 5
-    max_idle_time = 10
+    max_idle_time = 10 * 60
 
     cookies = {
         'TOKENS': '{%22access_token%22:%22tYnAkieDWjgsyPu8om1Fr9fI2RzJSlZB%22}',
