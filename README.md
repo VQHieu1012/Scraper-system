@@ -3,7 +3,7 @@
 ## Introduction
 In this repository, we create a Distributed scraper system to scrape product details in Tiki. 
 
-We apply Multiprocessing, Distributed system with Scrapy and Redis to optimize scraping time, and also make it easy to scale your scraper.
+We apply Multi-Threading, Distributed system with Scrapy and Redis to optimize scraping time, and also make it easy to scale your scraper.
 
 ## Workflow
 The first thing we need to do is extract all tags for products on Tki. Then we need to loop through all pages and get the product IDs. Once we have product IDs, we will use Scrapy to scrape product data.
