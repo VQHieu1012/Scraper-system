@@ -3,7 +3,7 @@ from playwright.sync_api import sync_playwright
 from playwright_stealth.stealth import stealth_sync
 import requests
 import re
-import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 from bs4 import BeautifulSoup as bs
 import random
 import os
@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 def get_tags():
     """
     Load all tag product links in tiki
+
+    Return: list of tag links
     """
     cookies = {
         'TOKENS': '{%22access_token%22:%22tYnAkieDWjgsyPu8om1Fr9fI2RzJSlZB%22}',
@@ -52,6 +54,8 @@ def extract_ids(string):
     Extract product ID and push to Redis
 
     string: -> str: page content
+
+    Return: list of product ids
     """
     ids = []
     soup = bs(string, 'html.parser')
@@ -63,25 +67,20 @@ def extract_ids(string):
         if match:
             id_value = match.group(1)
             ids.append(id_value)
-        else:
-            pass
+
     ids = list(set(ids))
     return ids
-
-def block(route):
-    """
-    Block images and media file for better bandwidth
-    """
-    if route.request.resource_type in ["image", "media"]: # "stylesheet"
-        route.abort()
-    elif ".mp4" in route.request.url:
-        route.abort()
-    else:
-        route.continue_()
 
 
 # Use playwright to render javascript 
 def extract_product_id(tags):
+    """
+    Load through all pages and push product links to Redis
+
+    tags: list of tag links
+
+    Return: None
+    """
     
     CHROMIUM_ARGS = [
         '--disable-blink-features=AutomationControlled',
@@ -91,48 +90,88 @@ def extract_product_id(tags):
 
     with sync_playwright() as p:
         
-        browser = p.firefox.launch(headless=False, slow_mo=200, args=CHROMIUM_ARGS, ignore_default_args=['--enable-automation'])
+        browser = p.chromium.launch(channel='chrome', headless=False, slow_mo=200, args=CHROMIUM_ARGS, ignore_default_args=['--enable-automation'])
         page = browser.new_page()
         
         stealth_sync(page)
-        page.route("**/*", block)  
 
         for tag in tags:
             page_num = 1
+            retry = True
             while True:
                 page.goto(tag + '?page=' + str(page_num))
-                print(tag + '?page=' + str(page_num))
-                page.wait_for_timeout(random.randint(1000, 1500))
+                
+                page.wait_for_timeout(600)
+
+                # Sometime we need to scroll down to render JS
+                page.evaluate(f"window.scrollTo(0, 1500);")
+                page.wait_for_timeout(random.randint(1500, 2000))
+                # ---------------------------------
 
                 ids = extract_ids(page.content())
-                for id in ids:
-                    redisClient.lpush('tiki_queue:start_urls', f"https://tiki.vn/api/v2/products/{id}")    
-                
-                if page.locator('//div[@class="style__StyledNotFoundProductView-sc-1uz0b49-0 iSZIiE"]').is_visible():
-                    print('Fnish')
-                    break
-                else: 
+
+                print(f"{tag}?page={page_num} \t {len(ids)}")
+
+                if len(ids) != 0:
+                    for id in ids:
+                        redisClient.lpush('tiki_queue:start_urls', f"https://tiki.vn/api/v2/products/{id}")    
                     page_num += 1
+                    retry = True
+                else:
+                    if retry:
+                        retry = False
+                        continue
+                    else:
+                        print(f"Finish {tag}?page={page_num} \t {len(ids)}")
+                        break
 
-def parallel_worker(workers, tags):
-    tags_each_list = len(tags) // workers
-    tags_1 = tags[:tags_each_list]
-    tags_2 = tags[tags_each_list:]
-    all_tags = [tags_1, tags_2]
-    num_workers = 2
+def distribute_elements(lst, l):
+    """
+    Distribute tags to 'number of workers' list with approximate elements
 
-    # Apply extract_product_id for each tag và run using pool.map
-    with multiprocessing.Pool(num_workers) as pool:
-        pool.map(extract_product_id, all_tags)
+    lst: list       -> list of tags need to be distributed
+    l: int          -> number of workers
 
-   
+    Return: a list of lists with approximate elements
+    """
+    n = len(lst)
+    min_size = n // l
+    remainder = n % l
+    
+    result = []
+    start_index = 0
+    
+    for i in range(l):
+        end_index = start_index + min_size + (1 if i < remainder else 0)
+        result.append(lst[start_index:end_index])
+        start_index = end_index
+        
+    return result
+
+def parallel_worker(num_workers, tags):
+    """
+    Create num_workers to work in parallel
+
+    num_workers: int -> number of workers
+    tags: list       -> list of tag links
+
+    Return: None
+    """
+    all_tags = distribute_elements(tags, num_workers)
+    print(all_tags)
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        executor.map(extract_product_id, all_tags)
+
+
+# Driver code
 if __name__ == "__main__":
     load_dotenv()    
     
-    # Create a redis client
     tags = get_tags()
-    print(tags[:5])
-    
-    parallel_worker(2, tags[:5])
+    print(tags[:2])
+
+    parallel_worker(2, tags[:2])
+
+
     
 
