@@ -1,20 +1,17 @@
-from typing import Iterable
-from scrapy_redis.spiders import RedisSpider
-from scrapy import FormRequest, version_info as scrapy_version
 import re
 import sys
 import os
+import json
+import logging
+from typing import Iterable
+from tutorial.items import TikiItem
+from pipelines import TutorialPipeline
+from scrapy_redis.spiders import RedisSpider
+from scrapy_redis.utils import bytes_to_str, is_dict, TextColor
+from scrapy import FormRequest, version_info as scrapy_version
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(r"D:\Distributed-scraper\tiki_all\tutorial\tutorial\\")
-
-from pipelines import TutorialPipeline
-
-import json
-from scrapy_redis.utils import bytes_to_str, is_dict, TextColor
-from tutorial.items import TikiItem
-import logging
-
 
 # Uncomment this to write log file
 # logging.basicConfig(
@@ -23,17 +20,15 @@ import logging
 #     level=logging.DEBUG, encoding='utf-8'
 # )
 
-
 class TikiSpider(RedisSpider):
 
     name = "tiki"
     allowed_domains = ["tiki.vn"]
     #start_urls = ["https://tiki.vn/api/v2/products/{id}"]
 
-
     redis_key = 'tiki_queue:start_urls'
     redis_batch_size = 5
-    max_idle_time = 10 * 60
+    max_idle_time = 5 * 60
 
     cookies = {
         'TOKENS': '{%22access_token%22:%22tYnAkieDWjgsyPu8om1Fr9fI2RzJSlZB%22}',
