@@ -5,13 +5,9 @@ import json
 import logging
 from typing import Iterable
 from tutorial.items import TikiItem
-from pipelines import TutorialPipeline
 from scrapy_redis.spiders import RedisSpider
 from scrapy_redis.utils import bytes_to_str, is_dict, TextColor
 from scrapy import FormRequest, version_info as scrapy_version
-
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(r"D:\Distributed-scraper\tiki_all\tutorial\tutorial\\")
 
 # Uncomment this to write log file
 # logging.basicConfig(
@@ -63,9 +59,7 @@ class TikiSpider(RedisSpider):
         return FormRequest(url, dont_filter=True, method=method, formdata=parameter, meta=metadata)
 
     
-    def parse(self, response):
-        self.myPipeline = TutorialPipeline
-        
+    def parse(self, response):        
         if response.body == None or response.body == '':
             print('I got a null or empty string value for data in a file')
             
